@@ -28,7 +28,7 @@ type Connect struct {
 }
 
 type Plogin struct {
-	Pid uint // Pid given by game server
+	Pid uint
 	Flag bool // Register new name?
 	Name string
 	Pw string
@@ -36,6 +36,10 @@ type Plogin struct {
 	Macid uint // ?
 	Contid string // 128 characters if using continuum, else empty
 	
+}
+
+type PenterArena struct {
+	Pid uint
 }
 
 func parseVersion(versionField []string) (Version, error) {
@@ -81,7 +85,7 @@ func ParseConnect(fields []string) (Connect, error) {
 		return msg, err
 	}
 
-	msg.Swname = fields[2]
+	msg.Swname = strings.Trim(fields[2], " ")
 	msg.Zonename = fields[3]
 	msg.Hostname = fields[4]
 	msg.Password = fields[5]
@@ -119,6 +123,22 @@ func ParsePlogin(fields []string) (Plogin, error) {
 	msg.Macid = uint(macid)
 
 	msg.Contid = fields[7]
+
+	return msg, nil
+}
+
+func ParsePenterArena(fields []string) (PenterArena, error) {
+	msg := PenterArena{}
+
+	if len(fields) != 1 {
+		return msg, protocolError{"ParsePenterArena: Not enough fields"}
+	}
+	
+	pid, err := strconv.Atoi(fields[1])
+	if err != nil {
+		return msg, protocolError{"ParsePenterArena: Invalid pid"}
+	}
+	msg.Pid = uint(pid)
 
 	return msg, nil
 }

@@ -11,7 +11,7 @@ import (
 )
 
 type ClientInfo struct {
-	Client *protocol.Client
+	Connection *protocol.Connection
 	HasQuit chan bool
 }
 
@@ -45,8 +45,8 @@ func main() {
 				break
 			}
 
-			client := protocol.Client{Conn: conn, Quit: quit, WaitGroup: &waitGroup, Biller: biller}
-			go client.Listen()
+			connection := protocol.Connection{Conn: conn, Quit: quit, WaitGroup: &waitGroup, Biller: biller}
+			go connection.Listen()
 		}
 	}()
 
@@ -54,32 +54,4 @@ func main() {
 	listener.Close()
 
 	waitGroup.Wait()
-}
-
-func connectMsgHandler(client *protocol.Client, fields []string) {
-	msg, err := protocol.ParseConnect(fields)
-	if err != nil {
-		log.Printf("Could not parse connection message: %s", err)
-		return
-	}
-
-	if msg.Version.Major != protocol.PROTOCOL_MAJOR || msg.Version.Minor != protocol.PROTOCOL_MINOR {
-		client.Send(protocol.ConnectBad{"Protocol mismatch"})
-	} else {
-		client.Send(protocol.ConnectOk{})
-	}
-}
-
-func ploginHandler(client *protocol.Client, fields []string) {
-	msg, err := protocol.ParsePlogin(fields)
-	if err != nil {
-		log.Printf("Could not parse plogin message: %s", err)
-		return
-	}
-
-	// TODO: Check user credentials etc...
-
-	//answer := protocol.Pok{msg.Pid, "should be mpty", msg.Name, "some squad", 123, 60, "1-2-1999 6:13:35"}
-	answer := protocol.Pbad{msg.Pid, true, "User not existing noob :p"}
-	client.Send(answer)
 }

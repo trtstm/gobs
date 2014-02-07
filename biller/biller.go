@@ -5,14 +5,42 @@ import (
 	"database/sql"
 	"os"
 	_ "github.com/mattn/go-sqlite3"
+	"sync"
+	"gobs/zone"
 )
+
+type playerLookup struct {
+	name string
+	billerId uint
+}
+
+type zoneAndPid struct {
+	zone string
+	pid uint
+}
+
+type zonePidLookup struct {
+	lookupLock sync.RWMutex
+	lookup map[zoneAndPid]playerLookup
+}
+
+type Player struct {
+	name string
+	zone string
+}
 
 type Biller struct {
 	db *sql.DB
+
+	zonesLock sync.RWMutex
+	zones map[string]*zone.Zone
+
+	playerLock sync.RWMutex
+	players map[string]*Player
 }
 
 func NewBiller(file string) *Biller {
-	biller := Biller{}
+	biller := Biller{players: map[string]*Player{}}
 
 	if fileExists(file) {
 		var err error
@@ -33,6 +61,37 @@ func NewBiller(file string) *Biller {
 	
 
 	return &biller
+}
+
+func (b *Biller) CreateZone(name string) {
+	b.zonesLock.Lock()
+	defer b.zonesLock.Unlock()
+
+	_, ok := b.zones[name]
+	if ok {
+		log.Printf("CreateZone: Zone already exists: %s\n", name)
+		return
+	}
+
+	tmp := zone.NewZone(name)
+	if tmp == nil {
+		log.Printf("CreateZone: Out of memory?: %s\n", name)
+		return
+	}
+
+	b.zones[name] = tmp
+}
+
+func (b *Biller) LoggedIn(name string) bool {
+	b.playerLock.RLock()
+	defer b.playerLock.RUnlock()
+
+	_, ok := b.players[name]
+	if !ok {
+		return false
+	}
+
+	return true
 }
 
 func (b *Biller) UserExists(name string) bool {

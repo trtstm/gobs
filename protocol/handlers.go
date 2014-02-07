@@ -4,7 +4,7 @@ import (
 	"log"
 )
 
-func (c *Client) handlePlogin(msg Plogin) {
+func (c *Connection) handlePlogin(msg Plogin) {
 	if msg.Flag {
 		if c.Biller.UserExists(msg.Name) {
 			answer := Pbad{msg.Pid, false, "Can't create user. User already exists"}
@@ -32,7 +32,17 @@ func (c *Client) handlePlogin(msg Plogin) {
 		return
 	}
 
-	// Check credentials of user...
+	if c.Biller.LoggedIn(msg.Name) {
+		answer := Pbad{msg.Pid, false, "Already logged in"}
+		c.Send(answer)
+		return
+	}
+
+	// TODO: Check credentials of user
 	answer := Pok{msg.Pid, "", msg.Name, "some squad", 123, 60, "1-2-1999 6:13:35"}
 	c.Send(answer)
+}
+
+func (c *Connection) handlePenterArena(msg PenterArena) {
+
 }
