@@ -19,10 +19,12 @@ type zoneAndPid struct {
 	pid uint
 }
 
-type zonePidLookup struct {
-	lookupLock sync.RWMutex
+type zonePids struct {
+	lock sync.RWMutex
 	lookup map[zoneAndPid]playerLookup
 }
+
+var zonePidLookup = zonePids{lookup: map[zoneAndPid]playerLookup{}}
 
 type Player struct {
 	name string
@@ -35,7 +37,7 @@ type Biller struct {
 	zonesLock sync.RWMutex
 	zones map[string]*zone.Zone
 
-	playerLock sync.RWMutex
+	playersLock sync.RWMutex
 	players map[string]*Player
 }
 
@@ -58,9 +60,26 @@ func NewBiller(file string) *Biller {
 			return nil
 		}
 	}
-	
 
 	return &biller
+}
+
+func (b *Biller) PidToBillerId(zone string, pid uint) (uint, bool) {
+	zonepid := zoneAndPid{zone: zone, pid: pid}
+	zonePidLookup.lock.RLock()
+	defer zonePidLookup.lock.RUnlock()
+
+	val, ok := zonePidLookup.lookup[zonepid]
+	return val.billerId, ok
+}
+
+func (b *Biller) PidToName(zone string, pid uint) (string, bool) {
+	zonepid := zoneAndPid{zone: zone, pid: pid}
+	zonePidLookup.lock.RLock()
+	defer zonePidLookup.lock.RUnlock()
+
+	val, ok := zonePidLookup.lookup[zonepid]
+	return val.name, ok
 }
 
 func (b *Biller) CreateZone(name string) {
@@ -82,9 +101,31 @@ func (b *Biller) CreateZone(name string) {
 	b.zones[name] = tmp
 }
 
+func (b *Biller) EnterArena(name string, zone string) bool {
+	b.zonesLock.Lock()
+	defer b.zonesLock.Unlock()
+
+	_, ok := b.zones[zone]
+	if !ok {
+		log.Printf("EnterArena: Unknown zone: %s\n", zone)
+		return false
+	}
+
+	b.playersLock.Lock()
+	defer b.playersLock.Unlock()
+	player, ok := b.players[name]
+	if !ok {
+		log.Printf("EnterArena: Unknown player: %s\n", zone)
+		return false
+	}
+
+	player.zone = zone
+	return true
+}
+
 func (b *Biller) LoggedIn(name string) bool {
-	b.playerLock.RLock()
-	defer b.playerLock.RUnlock()
+	b.playersLock.RLock()
+	defer b.playersLock.RUnlock()
 
 	_, ok := b.players[name]
 	if !ok {

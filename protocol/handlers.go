@@ -44,5 +44,11 @@ func (c *Connection) handlePlogin(msg Plogin) {
 }
 
 func (c *Connection) handlePenterArena(msg PenterArena) {
+	name, ok := c.Biller.PidToName(c.Zone, msg.Pid)
+	if !ok {
+		log.Printf("handlePenterArena: Could not lookup name: %d\n", msg.Pid)
+		return
+	}
 
+	c.Biller.EnterArena(name, c.Zone)
 }
