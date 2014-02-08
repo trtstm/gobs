@@ -2,6 +2,7 @@ package biller
 
 import (
 	"log"
+	"fmt"
 	"database/sql"
 	"os"
 	_ "github.com/mattn/go-sqlite3"
@@ -123,10 +124,64 @@ func (b *Biller) EnterArena(name string, zone string) bool {
 	return true
 }
 
-func (b *Biller) LoggedIn(name string) bool {
-	b.playersLock.RLock()
-	defer b.playersLock.RUnlock()
+func (b *Biller) LeaveArena(name string, zone string) bool {
+	b.zonesLock.Lock()
+	defer b.zonesLock.Unlock()
 
+	_, ok := b.zones[zone]
+	if !ok {
+		log.Printf("LeaveArena: Unknown zone: %s\n", zone)
+		return false
+	}
+
+	b.playersLock.Lock()
+	defer b.playersLock.Unlock()
+	player, ok := b.players[name]
+	if !ok {
+		log.Printf("LeaveArena: Unknown player: %s\n", zone)
+		return false
+	}
+
+	if player.zone != zone {
+		log.Printf("LeaveArena: Player not in this zone: %n\n", zone)
+		return false
+	}
+
+	// TODO: Update database with player
+	player.zone = ""
+	delete(b.players, name)
+
+	return true
+}
+
+func (b *Biller) Login(name string, password string) (error, bool) {
+	b.playersLock.Lock()
+	defer b.playersLock.Unlock()
+
+	if b.loggedIn(name) {
+		return fmt.Errorf("'%s' already logged in", name), false
+	}
+
+	var pw string
+	err := b.db.QueryRow(`SELECT "password" FROM "player" WHERE name = ?`, name).Scan(&pw)
+	switch {
+	case err == sql.ErrNoRows:
+		return fmt.Errorf("'%s' not registered", name), true
+	case err != nil:
+		log.Printf("(Biller::Login) sql error: %s\n", err)
+		return fmt.Errorf("unknown error"), false
+	}
+
+	if pw != password {
+		return fmt.Errorf("wrong password for player '%s'", name), false
+	}
+
+	b.players[name] = &Player{name: name, zone: ""}
+
+	return nil, false
+}
+
+func (b *Biller) loggedIn(name string) bool {
 	_, ok := b.players[name]
 	if !ok {
 		return false
@@ -135,10 +190,21 @@ func (b *Biller) LoggedIn(name string) bool {
 	return true
 }
 
+func (b *Biller) LoggedIn(name string) bool {
+	b.playersLock.RLock()
+	defer b.playersLock.RUnlock()
+
+	return b.loggedIn(name)
+}
+
 func (b *Biller) UserExists(name string) bool {
 	var billerid uint
 	err := b.db.QueryRow(`SELECT "billerid" FROM "player" WHERE name = ?`, name).Scan(&billerid)
-	if err != nil {
+	switch {
+	case err == sql.ErrNoRows:
+		return false
+	case err != nil:
+		log.Printf("(Biller::Login) sql error: %s\n", err)
 		return false
 	}
 

@@ -128,5 +128,13 @@ func (c *Connection) handleMessage(buffer string) {
 		}
 
 		c.handlePenterArena(msg)
+	} else if fields[0] == "PLEAVE" {
+		msg, err := ParsePleave(fields)
+		if err != nil {
+			log.Printf("Could not parse pleave message: %s", err)
+			return
+		}
+
+		c.handlePleave(msg)
 	}
 }

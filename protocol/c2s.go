@@ -42,6 +42,10 @@ type PenterArena struct {
 	Pid uint
 }
 
+type Pleave struct {
+	Pid uint
+}
+
 func parseVersion(versionField []string) (Version, error) {
 	var version = Version{}
 
@@ -137,6 +141,22 @@ func ParsePenterArena(fields []string) (PenterArena, error) {
 	pid, err := strconv.Atoi(fields[1])
 	if err != nil {
 		return msg, protocolError{"ParsePenterArena: Invalid pid"}
+	}
+	msg.Pid = uint(pid)
+
+	return msg, nil
+}
+
+func ParsePleave(fields []string) (Pleave, error) {
+	msg := Pleave{}
+
+	if len(fields) != 1 {
+		return msg, protocolError{"ParsePleave: Not enough fields"}
+	}
+	
+	pid, err := strconv.Atoi(fields[1])
+	if err != nil {
+		return msg, protocolError{"ParsePleave: Invalid pid"}
 	}
 	msg.Pid = uint(pid)
 
