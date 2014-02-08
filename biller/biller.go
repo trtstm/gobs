@@ -130,7 +130,7 @@ func (b *Biller) LeaveArena(name string, zone string) bool {
 
 	_, ok := b.zones[zone]
 	if !ok {
-		log.Printf("LeaveArena: Unknown zone: %s\n", zone)
+		log.Printf("(Biller::LeaveArena) unknown zone: %s\n", zone)
 		return false
 	}
 
@@ -138,12 +138,12 @@ func (b *Biller) LeaveArena(name string, zone string) bool {
 	defer b.playersLock.Unlock()
 	player, ok := b.players[name]
 	if !ok {
-		log.Printf("LeaveArena: Unknown player: %s\n", zone)
+		log.Printf("(Biller::LeaveArena) unknown player: %s\n", name)
 		return false
 	}
 
 	if player.zone != zone {
-		log.Printf("LeaveArena: Player not in this zone: %n\n", zone)
+		log.Printf("(Biller::LeaveArena) player is not in zone: %s\n", zone)
 		return false
 	}
 
