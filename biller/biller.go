@@ -216,19 +216,19 @@ func (b *Biller) CreateUser(name string, password string) error {
 
 	stmt, err := b.db.Prepare(`INSERT INTO "player" ("name","password") VALUES (?, ?)`)
 	if err != nil {
-		//log.Printf("CreateUser: Could not prepare statement: %s\n", err)
+		log.Printf("(Biller::CreateUser) could not prepare statement: %s\n", err)
 		return err
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(name, password)
 	if err != nil {
-		//log.Printf("CreateUser: Could not execute query: %s\n", err)
+		log.Printf("(Biller::CreateUser) could not execute query: %s\n", err)
 		return err
 	}
 
 	if n, err := res.RowsAffected(); err != nil || n != 1 {
-		//log.Printf("CreateUser: User was not inserted: %s\n", err)
+		log.Printf("(Biller::CreateUser) user was not inserted: %s\n", err)
 		return err
 	}
 
