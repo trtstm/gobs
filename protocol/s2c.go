@@ -1,17 +1,17 @@
 package protocol
 
 import (
-//	"log"
+	//	"log"
 	"fmt"
-//	"time"
+	//	"time"
 )
 
 const (
-	SERVER_NAME string = "Gobs 0.0"
-	SERVER_NETWORK = "" // Eg. SSC
-	PROTOCOL_MAJOR uint = 1
-	PROTOCOL_MINOR uint = 3
-	PROTOCOL_PATCH uint = 1
+	SERVER_NAME    string = "Gobs 0.0"
+	SERVER_NETWORK        = "" // Eg. SSC
+	PROTOCOL_MAJOR uint   = 1
+	PROTOCOL_MINOR uint   = 3
+	PROTOCOL_PATCH uint   = 1
 )
 
 type ConnectOk struct {
@@ -30,12 +30,12 @@ func (c ConnectBad) String() string {
 }
 
 type Pok struct {
-	Pid uint
-	Rtext string
-	Name string
-	Squad string
-	BillerId uint
-	Usage uint
+	Pid       uint
+	Rtext     string
+	Name      string
+	Squad     string
+	BillerId  uint
+	Usage     uint
 	FirstUsed string
 }
 
@@ -44,9 +44,9 @@ func (p Pok) String() string {
 }
 
 type Pbad struct {
-	Pid uint // Pid that game server gave us
+	Pid     uint // Pid that game server gave us
 	NewName bool
-	Rtext string
+	Rtext   string
 }
 
 func (p Pbad) String() string {

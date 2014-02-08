@@ -1,20 +1,20 @@
 package protocol
 
 import (
-	"net"
-	"sync"
-	"gobs/biller"
 	"fmt"
+	"gobs/biller"
 	"log"
+	"net"
 	"strings"
+	"sync"
 )
 
 type Connection struct {
-	Conn net.Conn
-	Quit chan struct{}
+	Conn      net.Conn
+	Quit      chan struct{}
 	WaitGroup *sync.WaitGroup
-	Biller *biller.Biller
-	Zone string
+	Biller    *biller.Biller
+	Zone      string
 }
 
 func (c *Connection) Send(msg fmt.Stringer) (int, error) {
@@ -36,15 +36,15 @@ func (c *Connection) Listen() {
 
 	for {
 		select {
-			case <- c.Quit:
+		case <-c.Quit:
+			return
+
+		case buffer, ok := <-bufCh:
+			if !ok {
 				return
+			}
 
-			case buffer, ok := <- bufCh:
-				if !ok {
-					return
-				}
-
-				c.handleMessage(buffer)
+			c.handleMessage(buffer)
 		}
 	}
 }

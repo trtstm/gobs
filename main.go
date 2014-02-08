@@ -1,10 +1,10 @@
 package main
 
 import (
-	"net"
-	"log"
+	"gobs/biller"
 	"gobs/protocol"
-	"gobs/biller"	
+	"log"
+	"net"
 	"os"
 	"os/signal"
 	"sync"
@@ -12,7 +12,7 @@ import (
 
 type ClientInfo struct {
 	Connection *protocol.Connection
-	HasQuit chan bool
+	HasQuit    chan bool
 }
 
 func interruptHandler(quit chan struct{}) {
@@ -50,7 +50,7 @@ func main() {
 		}
 	}()
 
-	<- quit
+	<-quit
 	listener.Close()
 
 	waitGroup.Wait()

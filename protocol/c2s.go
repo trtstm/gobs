@@ -1,8 +1,8 @@
 package protocol
 
 import (
-	"strings"
 	"strconv"
+	"strings"
 )
 
 type protocolError struct {
@@ -21,21 +21,21 @@ type Version struct {
 
 type Connect struct {
 	Version
-	Swname string
+	Swname   string
 	Zonename string
 	Hostname string
 	Password string
 }
 
 type Plogin struct {
-	Pid uint
-	Flag bool // Register new name?
-	Name string
-	Pw string
-	Ip string
-	Macid uint // ?
+	Pid    uint
+	Flag   bool // Register new name?
+	Name   string
+	Pw     string
+	Ip     string
+	Macid  uint   // ?
 	Contid string // 128 characters if using continuum, else empty
-	
+
 }
 
 type PenterArena struct {
@@ -77,7 +77,7 @@ func ParseConnect(fields []string) (Connect, error) {
 	if len(fields) != 6 {
 		return msg, protocolError{"ParseConnect: Not enough fields"}
 	}
-	
+
 	versionField := strings.Split(fields[1], ".")
 	if len(versionField) != 3 {
 		return msg, protocolError{"ParseConnect: Version does not contain 3 values"}
@@ -103,7 +103,7 @@ func ParsePlogin(fields []string) (Plogin, error) {
 	if len(fields) != 8 {
 		return msg, protocolError{"ParsePlogin: Not enough fields"}
 	}
-	
+
 	pid, err := strconv.Atoi(fields[1])
 	if err != nil {
 		return msg, protocolError{"ParsePlogin: Invalid pid"}
@@ -137,7 +137,7 @@ func ParsePenterArena(fields []string) (PenterArena, error) {
 	if len(fields) != 1 {
 		return msg, protocolError{"ParsePenterArena: Not enough fields"}
 	}
-	
+
 	pid, err := strconv.Atoi(fields[1])
 	if err != nil {
 		return msg, protocolError{"ParsePenterArena: Invalid pid"}
@@ -153,7 +153,7 @@ func ParsePleave(fields []string) (Pleave, error) {
 	if len(fields) != 1 {
 		return msg, protocolError{"ParsePleave: Not enough fields"}
 	}
-	
+
 	pid, err := strconv.Atoi(fields[1])
 	if err != nil {
 		return msg, protocolError{"ParsePleave: Invalid pid"}

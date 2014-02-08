@@ -1,27 +1,27 @@
 package biller
 
 import (
-	"log"
-	"fmt"
 	"database/sql"
-	"os"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"sync"
 	"gobs/zone"
+	"log"
+	"os"
+	"sync"
 )
 
 type playerLookup struct {
-	name string
+	name     string
 	billerId uint
 }
 
 type zoneAndPid struct {
 	zone string
-	pid uint
+	pid  uint
 }
 
 type zonePids struct {
-	lock sync.RWMutex
+	lock   sync.RWMutex
 	lookup map[zoneAndPid]playerLookup
 }
 
@@ -36,10 +36,10 @@ type Biller struct {
 	db *sql.DB
 
 	zonesLock sync.RWMutex
-	zones map[string]*zone.Zone
+	zones     map[string]*zone.Zone
 
 	playersLock sync.RWMutex
-	players map[string]*Player
+	players     map[string]*Player
 }
 
 func NewBiller(file string) *Biller {
@@ -241,7 +241,7 @@ func fileExists(path string) bool {
 		return false
 	}
 
-	return true	
+	return true
 }
 
 func (b *Biller) createDatabase(file string) error {
