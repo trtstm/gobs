@@ -134,7 +134,7 @@ func ParsePlogin(fields []string) (Plogin, error) {
 func ParsePenterArena(fields []string) (PenterArena, error) {
 	msg := PenterArena{}
 
-	if len(fields) != 1 {
+	if len(fields) != 2 {
 		return msg, protocolError{"ParsePenterArena: Not enough fields"}
 	}
 
@@ -150,7 +150,7 @@ func ParsePenterArena(fields []string) (PenterArena, error) {
 func ParsePleave(fields []string) (Pleave, error) {
 	msg := Pleave{}
 
-	if len(fields) != 1 {
+	if len(fields) != 2 {
 		return msg, protocolError{"ParsePleave: Not enough fields"}
 	}
 
