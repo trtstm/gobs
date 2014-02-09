@@ -15,6 +15,7 @@ type Player struct {
 	zone string
 	billerId uint
 	pid uint
+	inside bool
 }
 
 type Biller struct {
@@ -107,28 +108,36 @@ func (b *Biller) CreateZone(name string) {
 	b.zones[name] = tmp
 }
 
-func (b *Biller) EnterArena(billerId uint, zoneName string) bool {
-	// Should this to anything? We are already added to the zone when logging in.
+func (b *Biller) EnterArena(billerId uint) {
+	b.playersLock.Lock()
+	defer b.playersLock.Unlock()
+	player, ok := b.players[billerId]
+	if !ok {
+		log.Printf("(Biller::EnterArena) unknown player: %d\n", billerId)
+		return
+	}
 
-	return true
+	// TODO: Start usage counter
+	player.inside = true
 }
 
-func (b *Biller) LeaveArena(billerId uint) bool {
+func (b *Biller) LeaveArena(billerId uint) {
 	b.playersLock.Lock()
 	defer b.playersLock.Unlock()
 	player, ok := b.players[billerId]
 	if !ok {
 		log.Printf("(Biller::LeaveArena) unknown player: %d\n", billerId)
-		return false
+		return
 	}
 
 	b.zonesLock.RLock()
 	defer b.zonesLock.RUnlock()
 
 	zone, ok := b.zones[player.zone]
+	// Should never happen
 	if !ok {
 		log.Printf("(Biller::LeaveArena) unknown zone: %s\n", player.zone)
-		return false
+		return
 	}
 
 	// TODO: Update database with player
@@ -170,7 +179,7 @@ func (b *Biller) Login(name string, password string, zoneName string, pid uint) 
 		return fmt.Errorf("wrong password for player '%s'", name), false
 	}
 
-	player := Player{name: name, zone: zoneName, billerId: billerId, pid: pid}
+	player := Player{name: name, zone: zoneName, billerId: billerId, pid: pid, inside: false}
 	b.players[billerId] = &player
 	zone.AddPlayer(player.pid, player.billerId)
 

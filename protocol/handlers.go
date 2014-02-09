@@ -51,7 +51,7 @@ func (c *Connection) handlePenterArena(msg PenterArena) {
 		return
 	}
 
-	c.Biller.EnterArena(billerId, c.Zone)
+	c.Biller.EnterArena(billerId)
 }
 
 func (c *Connection) handlePleave(msg Pleave) {
