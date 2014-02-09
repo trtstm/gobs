@@ -10,26 +10,11 @@ import (
 	"sync"
 )
 
-type playerLookup struct {
-	name     string
-	billerId uint
-}
-
-type zoneAndPid struct {
-	zone string
-	pid  uint
-}
-
-type zonePids struct {
-	lock   sync.RWMutex
-	lookup map[zoneAndPid]playerLookup
-}
-
-var zonePidLookup = zonePids{lookup: map[zoneAndPid]playerLookup{}}
-
 type Player struct {
 	name string
 	zone string
+	billerId uint
+	pid uint
 }
 
 type Biller struct {
@@ -39,11 +24,11 @@ type Biller struct {
 	zones     map[string]*zone.Zone
 
 	playersLock sync.RWMutex
-	players     map[string]*Player
+	players     map[uint]*Player
 }
 
 func NewBiller(file string) *Biller {
-	biller := Biller{players: map[string]*Player{}, zones: map[string]*zone.Zone{}}
+	biller := Biller{players: map[uint]*Player{}, zones: map[string]*zone.Zone{}}
 
 	if fileExists(file) {
 		var err error
@@ -65,22 +50,42 @@ func NewBiller(file string) *Biller {
 	return &biller
 }
 
-func (b *Biller) PidToBillerId(zone string, pid uint) (uint, bool) {
-	zonepid := zoneAndPid{zone: zone, pid: pid}
-	zonePidLookup.lock.RLock()
-	defer zonePidLookup.lock.RUnlock()
+func (b *Biller) PidToBillerId(zoneName string, pid uint) (uint, bool) {
+	b.zonesLock.RLock()
+	defer b.zonesLock.RUnlock()
 
-	val, ok := zonePidLookup.lookup[zonepid]
-	return val.billerId, ok
+	zone, ok := b.zones[zoneName]
+	if !ok {
+log.Printf("YEEEEEEY")
+		return 0, false
+	}
+	
+	billerId, ok := zone.ToBillerId(pid)
+	return billerId, ok
 }
 
-func (b *Biller) PidToName(zone string, pid uint) (string, bool) {
-	zonepid := zoneAndPid{zone: zone, pid: pid}
-	zonePidLookup.lock.RLock()
-	defer zonePidLookup.lock.RUnlock()
+func (b *Biller) PidToName(zoneName string, pid uint) (string, bool) {
+	b.zonesLock.RLock()
+	defer b.zonesLock.RUnlock()
 
-	val, ok := zonePidLookup.lookup[zonepid]
-	return val.name, ok
+	zone, ok := b.zones[zoneName]
+	if !ok {
+		return "", false
+	}
+
+	billerId, ok := zone.ToBillerId(pid)
+	if !ok {
+		return "", false
+	}
+
+	b.playersLock.RLock()
+	defer b.playersLock.RUnlock()
+	player, ok := b.players[billerId]
+	if !ok {
+		return "", false
+	}
+
+	return player.name, true
 }
 
 func (b *Biller) CreateZone(name string) {
@@ -102,68 +107,53 @@ func (b *Biller) CreateZone(name string) {
 	b.zones[name] = tmp
 }
 
-func (b *Biller) EnterArena(name string, zone string) bool {
-	b.zonesLock.Lock()
-	defer b.zonesLock.Unlock()
+func (b *Biller) EnterArena(billerId uint, zoneName string) bool {
+	// Should this to anything? We are already added to the zone when logging in.
 
-	_, ok := b.zones[zone]
-	if !ok {
-		log.Printf("EnterArena: Unknown zone: %s\n", zone)
-		return false
-	}
-
-	b.playersLock.Lock()
-	defer b.playersLock.Unlock()
-	player, ok := b.players[name]
-	if !ok {
-		log.Printf("EnterArena: Unknown player: %s\n", zone)
-		return false
-	}
-
-	player.zone = zone
 	return true
 }
 
-func (b *Biller) LeaveArena(name string, zone string) bool {
-	b.zonesLock.Lock()
-	defer b.zonesLock.Unlock()
-
-	_, ok := b.zones[zone]
-	if !ok {
-		log.Printf("(Biller::LeaveArena) unknown zone: %s\n", zone)
-		return false
-	}
-
+func (b *Biller) LeaveArena(billerId uint) bool {
 	b.playersLock.Lock()
 	defer b.playersLock.Unlock()
-	player, ok := b.players[name]
+	player, ok := b.players[billerId]
 	if !ok {
-		log.Printf("(Biller::LeaveArena) unknown player: %s\n", name)
+		log.Printf("(Biller::LeaveArena) unknown player: %d\n", billerId)
 		return false
 	}
 
-	if player.zone != zone {
-		log.Printf("(Biller::LeaveArena) player is not in zone: %s\n", zone)
+	b.zonesLock.RLock()
+	defer b.zonesLock.RUnlock()
+
+	zone, ok := b.zones[player.zone]
+	if !ok {
+		log.Printf("(Biller::LeaveArena) unknown zone: %s\n", player.zone)
 		return false
 	}
 
 	// TODO: Update database with player
-	player.zone = ""
-	delete(b.players, name)
+	zone.RemovePlayer(player.pid)	
+	delete(b.players, billerId)
 
 	return true
 }
 
-func (b *Biller) Login(name string, password string) (error, bool) {
+func (b *Biller) Login(name string, password string, zoneName string, pid uint) (error, bool) {
 	b.playersLock.Lock()
 	defer b.playersLock.Unlock()
 
-	if b.loggedIn(name) {
-		return fmt.Errorf("'%s' already logged in", name), false
+	b.zonesLock.RLock()
+	defer b.zonesLock.RUnlock()
+
+	// Should never happen since zone is added when it connects.
+	zone, ok := b.zones[zoneName]
+	if !ok {
+		return fmt.Errorf("zone not found"), false
 	}
 
 	var pw string
-	err := b.db.QueryRow(`SELECT "password" FROM "player" WHERE name = ?`, name).Scan(&pw)
+	var billerId uint
+	err := b.db.QueryRow(`SELECT "password", "billerid" FROM "player" WHERE name = ?`, name).Scan(&pw, &billerId)
 	switch {
 	case err == sql.ErrNoRows:
 		return fmt.Errorf("'%s' not registered", name), true
@@ -172,17 +162,23 @@ func (b *Biller) Login(name string, password string) (error, bool) {
 		return fmt.Errorf("unknown error"), false
 	}
 
+	if b.loggedIn(billerId) {
+		return fmt.Errorf("'%s' already logged in", name), false
+	}
+
 	if pw != password {
 		return fmt.Errorf("wrong password for player '%s'", name), false
 	}
 
-	b.players[name] = &Player{name: name, zone: ""}
+	player := Player{name: name, zone: zoneName, billerId: billerId, pid: pid}
+	b.players[billerId] = &player
+	zone.AddPlayer(player.pid, player.billerId)
 
 	return nil, false
 }
 
-func (b *Biller) loggedIn(name string) bool {
-	_, ok := b.players[name]
+func (b *Biller) loggedIn(billerId uint) bool {
+	_, ok := b.players[billerId]
 	if !ok {
 		return false
 	}
@@ -190,11 +186,11 @@ func (b *Biller) loggedIn(name string) bool {
 	return true
 }
 
-func (b *Biller) LoggedIn(name string) bool {
+func (b *Biller) LoggedIn(billerId uint) bool {
 	b.playersLock.RLock()
 	defer b.playersLock.RUnlock()
 
-	return b.loggedIn(name)
+	return b.loggedIn(billerId)
 }
 
 func (b *Biller) UserExists(name string) bool {

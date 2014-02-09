@@ -21,12 +21,19 @@ func (c *Connection) handlePlogin(msg Plogin) {
 		}
 
 		log.Printf("(Connection::handlePlogin) created user: %s\n", msg.Name)
+		err, _ = c.Biller.Login(msg.Name, msg.Pw, c.Zone, msg.Pid)
+		if err != nil {
+			answer := Pbad{msg.Pid, false, ""}
+			c.Send(answer)
+			return
+		}		
+
 		answer := Pok{msg.Pid, "", msg.Name, "some squad", 123, 60, "1-2-1999 6:13:35"}
 		c.Send(answer)
 		return
 	}
 
-	err, register := c.Biller.Login(msg.Name, msg.Pw)
+	err, register := c.Biller.Login(msg.Name, msg.Pw, c.Zone, msg.Pid)
 	if err != nil {
 		answer := Pbad{msg.Pid, register, ""}
 		c.Send(answer)
@@ -38,21 +45,21 @@ func (c *Connection) handlePlogin(msg Plogin) {
 }
 
 func (c *Connection) handlePenterArena(msg PenterArena) {
-	name, ok := c.Biller.PidToName(c.Zone, msg.Pid)
+	billerId, ok := c.Biller.PidToBillerId(c.Zone, msg.Pid)
 	if !ok {
-		log.Printf("handlePenterArena: Could not lookup name: %d\n", msg.Pid)
+		log.Printf("handlePenterArena: Could not lookup billerId: %d\n", msg.Pid)
 		return
 	}
 
-	c.Biller.EnterArena(name, c.Zone)
+	c.Biller.EnterArena(billerId, c.Zone)
 }
 
 func (c *Connection) handlePleave(msg Pleave) {
-	name, ok := c.Biller.PidToName(c.Zone, msg.Pid)
+	billerId, ok := c.Biller.PidToBillerId(c.Zone, msg.Pid)
 	if !ok {
 		log.Printf("handlePleave: Could not lookup name: %d\n", msg.Pid)
 		return
 	}
 
-	c.Biller.LeaveArena(name, c.Zone)
+	c.Biller.LeaveArena(billerId)
 }
