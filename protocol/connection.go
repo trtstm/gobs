@@ -73,7 +73,7 @@ func (c *Connection) handleMessage(buffer string) {
 	}
 
 	// Check if client tries to do something without connecting first
-	if c.Zone != "" && fields[0] != "CONNECT" {
+	if c.Zone == "" && fields[0] != "CONNECT" {
 		log.Printf("Not yet connected: %s\n", fields)
 		c.Send(ConnectBad{"Not yet connected"})
 		c.Disconnect()
