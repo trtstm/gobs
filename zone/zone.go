@@ -8,7 +8,7 @@ type Zone struct {
 	name string
 
 	pidToBillerIdLock sync.RWMutex
-	pidToBillerId map[uint]uint
+	pidToBillerId     map[uint]uint
 }
 
 func NewZone(name string) *Zone {

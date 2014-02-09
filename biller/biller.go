@@ -11,11 +11,11 @@ import (
 )
 
 type Player struct {
-	name string
-	zone string
+	name     string
+	zone     string
 	billerId uint
-	pid uint
-	inside bool
+	pid      uint
+	inside   bool
 }
 
 type Biller struct {
@@ -57,10 +57,10 @@ func (b *Biller) PidToBillerId(zoneName string, pid uint) (uint, bool) {
 
 	zone, ok := b.zones[zoneName]
 	if !ok {
-log.Printf("YEEEEEEY")
+		log.Printf("YEEEEEEY")
 		return 0, false
 	}
-	
+
 	billerId, ok := zone.ToBillerId(pid)
 	return billerId, ok
 }
@@ -141,7 +141,7 @@ func (b *Biller) LeaveArena(billerId uint) {
 	}
 
 	// TODO: Update database with player
-	zone.RemovePlayer(player.pid)	
+	zone.RemovePlayer(player.pid)
 	delete(b.players, billerId)
 
 	return true

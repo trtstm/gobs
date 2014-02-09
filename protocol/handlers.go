@@ -26,7 +26,7 @@ func (c *Connection) handlePlogin(msg Plogin) {
 			answer := Pbad{msg.Pid, false, ""}
 			c.Send(answer)
 			return
-		}		
+		}
 
 		answer := Pok{msg.Pid, "", msg.Name, "some squad", 123, 60, "1-2-1999 6:13:35"}
 		c.Send(answer)
