@@ -57,7 +57,6 @@ func (b *Biller) PidToBillerId(zoneName string, pid uint) (uint, bool) {
 
 	zone, ok := b.zones[zoneName]
 	if !ok {
-		log.Printf("YEEEEEEY")
 		return 0, false
 	}
 
