@@ -43,7 +43,7 @@ type Biller struct {
 }
 
 func NewBiller(file string) *Biller {
-	biller := Biller{players: map[string]*Player{}}
+	biller := Biller{players: map[string]*Player{}, zones: map[string]*zone.Zone{}}
 
 	if fileExists(file) {
 		var err error
