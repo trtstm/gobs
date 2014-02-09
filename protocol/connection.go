@@ -56,13 +56,13 @@ func (c *Connection) listen(out chan string) {
 	buf := make([]byte, 1023)
 	for {
 		n, err := c.Conn.Read(buf)
-		if err != nil || n < 1 || n > 1023 {
+		if err != nil || n < 2 || n > 1023 || buf[n-1] != '\n' {
 			close(out)
 			return
 		}
 
-		log.Print("Recv: " + string(buf[:n]))
-		out <- string(buf)
+		log.Print("Recv: " + string(buf[:n-1]))
+		out <- string(buf[:n-1])
 	}
 }
 
